@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>GazeBridge: Ticker Mode</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #050505;
+            color: #ffffff;
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        .ticker-container {
+            height: 200px;
+            display: flex;
+            align-items: center;
+            overflow: hidden;
+            border-top: 2px solid #1a1a1a;
+            border-bottom: 2px solid #1a1a1a;
+            background: rgba(0, 210, 255, 0.05);
+        }
+
+        .ticker-content {
+            white-space: nowrap;
+            font-size: 5rem;
+            font-weight: 900;
+            padding-left: 100vw;
+            will-change: transform;
+            color: #00d2ff;
+            text-shadow: 0 0 20px rgba(0, 210, 255, 0.5);
+        }
+
+        .focus-gate {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 4px;
+            height: 240px;
+            background: #ff0055;
+            box-shadow: 0 0 15px #ff0055;
+            z-index: 10;
+            opacity: 0.8;
+        }
+
+        .status-badge {
+            transition: all 0.3s ease;
+        }
+
+        .glow {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.6; }
+            50% { opacity: 1; }
+            100% { opacity: 0.6; }
+        }
+    </style>
+</head>
+<body class="flex flex-col h-screen items-center justify-center p-4">
+
+    <!-- Верхняя панель -->
+    <div class="fixed top-8 left-0 w-full px-6 flex justify-between items-start z-20">
+        <div>
+            <h1 class="text-2xl font-black tracking-tighter text-[#00d2ff]">GAZEBRIDGE</h1>
+            <p class="text-xs text-gray-500 uppercase tracking-widest">Mode: Smooth Pursuit (Ticker)</p>
+        </div>
+        <div id="status" class="status-badge px-4 py-2 rounded-full border border-gray-700 text-xs font-bold uppercase">
+            Ожидание...
+        </div>
+    </div>
+
+    <!-- Индикатор стабильности (Гироскоп) -->
+    <div class="mb-12 text-center">
+        <div class="text-[0.6rem] uppercase tracking-[0.3em] text-gray-400 mb-2">Стабильность Навигатора</div>
+        <div class="w-64 h-1 bg-gray-800 rounded-full overflow-hidden">
+            <div id="stability-bar" class="h-full bg-[#00d2ff] transition-all duration-100" style="width: 0%"></div>
+        </div>
+    </div>
+
+    <!-- Контейнер бегущей строки -->
+    <div class="relative w-full ticker-container">
+        <div class="focus-gate"></div>
+        <div id="ticker" class="ticker-content">
+            ДАНИЯ ПЕЧАТАЕТ СВОЙ ПЕРВЫЙ АВТОМОБИЛЬ... МАЙ - МЕСЯЦ ОСВЕДОМЛЕННОСТИ ОБ АПРАКСИИ... МЫ СТРОИМ МОСТ...
+        </div>
+    </div>
+
+    <!-- Инструкция -->
+    <div class="fixed bottom-12 text-center px-10">
+        <p class="text-gray-500 text-sm italic">
+            "Замри, чтобы текст поплыл. Твой покой — это ключ к информации."
+        </p>
+        <button id="startBtn" class="mt-6 px-8 py-3 bg-[#00d2ff] text-black font-bold rounded-lg uppercase tracking-widest text-xs hover:bg-white transition-colors">
+            Активировать Датчики
+        </button>
+    </div>
+
+    <script>
+        let isRunning = false;
+        let position = 0;
+        let speed = 0;
+        const baseSpeed = 4; // Скорость бегущей строки
+        let stability = 0;
+        
+        const ticker = document.getElementById('ticker');
+        const stabilityBar = document.getElementById('stability-bar');
+        const statusBadge = document.getElementById('status');
+        const startBtn = document.getElementById('startBtn');
+
+        function updateTicker() {
+            if (isRunning) {
+                // Если стабильность высокая (голова не дергается), текст движется
+                if (stability > 70) {
+                    position -= baseSpeed;
+                    speed = baseSpeed;
+                    statusBadge.innerText = "СИГНАЛ ЧИСТ";
+                    statusBadge.style.borderColor = "#00d2ff";
+                    statusBadge.style.color = "#00d2ff";
+                    ticker.style.filter = "blur(0px)";
+                } else {
+                    // Если голова дергается, текст замедляется и размывается
+                    speed *= 0.9;
+                    position -= speed;
+                    statusBadge.innerText = "ПОИСК ПОКОЯ";
+                    statusBadge.style.borderColor = "#ff0055";
+                    statusBadge.style.color = "#ff0055";
+                    ticker.style.filter = `blur(${10 - stability/10}px)`;
+                }
+
+                // Зацикливание (упрощенное)
+                if (Math.abs(position) > ticker.offsetWidth + window.innerWidth) {
+                    position = 0;
+                }
+
+                ticker.style.transform = `translateX(${position}px)`;
+            }
+            requestAnimationFrame(updateTicker);
+        }
+
+        async function initSensors() {
+            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+                try {
+                    const permission = await DeviceOrientationEvent.requestPermission();
+                    if (permission === 'granted') {
+                        startSensors();
+                    }
+                } catch (err) {
+                    console.error(err);
+                }
+            } else {
+                startSensors();
+            }
+        }
+
+        function startSensors() {
+            isRunning = true;
+            startBtn.classList.add('hidden');
+            
+            window.addEventListener('deviceorientation', (event) => {
+                // Вычисляем стабильность на основе изменения углов
+                // Чем меньше изменение, тем выше стабильность
+                let totalRotation = Math.abs(event.beta) + Math.abs(event.gamma);
+                
+                // Простая фильтрация стабильности
+                static lastRotation = totalRotation;
+                let delta = Math.abs(totalRotation - lastRotation);
+                lastRotation = totalRotation;
+
+                // Если дельта маленькая — мы стабильны (90-100%)
+                // Если дельта большая — стабильность падает
+                let currentStability = Math.max(0, 100 - (delta * 15));
+                stability = (stability * 0.8) + (currentStability * 0.2); // Сглаживание
+
+                stabilityBar.style.width = `${stability}%`;
+            });
+        }
+
+        startBtn.addEventListener('click', initSensors);
+        updateTicker();
+    </script>
+</body>
+</html>
