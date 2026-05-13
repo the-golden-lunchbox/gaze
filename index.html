@@ -249,7 +249,7 @@
                     <p id="param-word" class="text-emerald-300 font-black text-sm mt-1">SPACESHIP</p>
                 </div>
                 <div class="bg-slate-800 rounded-xl p-3">
-                    <p class="text-[9px] text-slate-500 uppercase tracking-widest">Tremor Tolerance</p>
+                    <p class="text-[9px] text-slate-500 uppercase tracking-widest">Postural_drift</p>
                     <p id="param-threshold" class="text-yellow-300 font-black text-sm mt-1">15.0 rad/s</p>
                 </div>
                 <div class="bg-slate-800 rounded-xl p-3">
@@ -450,8 +450,8 @@
             const rot = e.rotationRate;
             const rawMagnitude = Math.sqrt(rot.alpha**2 + rot.beta**2 + rot.gamma**2);
             smoothedMagnitude = (smoothedMagnitude * 0.85) + (rawMagnitude * 0.15);
-            sessionTremorReadings.push(smoothedMagnitude);
-            if (sessionTremorReadings.length > 200) sessionTremorReadings.shift();
+            sessionPosturalDriftReadings.push(smoothedMagnitude);
+            if (sessionPosturalDriftReadings.length > 200) sessionPosturalDriftReadings.shift();
             const debugText = document.getElementById('debug-gyro');
             debugText.innerText = `SIGNAL: ${smoothedMagnitude.toFixed(2)} rad/s`;
             const activeThreshold = state.isStable ? (stabilityThreshold * 2.5) : stabilityThreshold;
@@ -574,8 +574,8 @@
         function closePanel() { document.getElementById('gemma-panel').classList.remove('open'); }
 
         function generateTelemetry() {
-            const avgTremor = sessionTremorReadings.length > 0
-                ? (sessionTremorReadings.reduce((a,b) => a+b, 0) / sessionTremorReadings.length).toFixed(2)
+            const avgPosturalDrift = sessionPosturalDriftReadings.length > 0
+                ? (sessionPosturalDriftReadings.reduce((a,b) => a+b, 0) / sessionposturalDriftReadings.length).toFixed(2)
                 : smoothedMagnitude.toFixed(2);
             const avgFocus = sessionFocusTimes.length > 0
                 ? Math.round(sessionFocusTimes.reduce((a,b) => a+b, 0) / sessionFocusTimes.length)
@@ -589,7 +589,7 @@
                 age: 12,
                 diagnosis: "Oculomotor Apraxia + Dyslexia (3 types)",
                 session_success_rate: parseFloat(successRate),
-                avg_tremor_rad_s: parseFloat(avgTremor),
+                avg_postural_drift_rad_s: parseFloat(avgDrift),
                 avg_focus_time_ms: avgFocus,
                 current_theme: currentTheme,
                 words_attempted: sessionWordsAttempted,
