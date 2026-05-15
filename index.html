@@ -488,6 +488,14 @@
             document.getElementById('lock-screen').classList.toggle('hidden', ready);
             if (ready) {
                 if (!state.active) startMatryoshka();
+                // Show pilot encouragement if available
+if (window.currentEncouragement) {
+    const encourageDiv = document.createElement('div');
+    encourageDiv.style.cssText = 'margin-top:24px; color:#6ee7b7; font-size:14px; font-weight:800; text-align:center; padding:0 20px; animation: fadeIn 1s ease;';
+    encourageDiv.innerText = '✈️ ' + window.currentEncouragement;
+    scn.appendChild(encourageDiv);
+    setTimeout(() => encourageDiv.remove(), 4000);
+}
             } else {
                 state.active = false;
                 sequenceId++;
@@ -607,6 +615,9 @@
         }
 
         function applyGemmaOutput() {
+            if (params.pilot_encouragement) {
+    window.currentEncouragement = params.pilot_encouragement;
+}
             const raw = document.getElementById('gemma-json-input').value.trim();
             if (!raw) { alert('Please paste Gemma JSON output first.'); return; }
             try {
